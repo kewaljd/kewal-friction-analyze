@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Friction Analysis Ultimate</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+  font-family:'Segoe UI',sans-serif;
+  background:linear-gradient(135deg,#0f172a,#1e293b);
+  color:white;
+}
+
+.container{
+  display:grid;
+  grid-template-columns:260px 1fr 320px;
+  grid-template-rows:1fr 260px;
+  height:100vh;
+  gap:12px;
+  padding:12px;
+}
+
+.card{
+  background:rgba(255,255,255,0.05);
+  border-radius:15px;
+  padding:15px;
+  position:relative;
+  backdrop-filter:blur(10px);
+}
+
+.controls{grid-row:1/span 2;}
+.simulation{display:flex;justify-content:center;align-items:center;}
+.data{overflow-y:auto;}
+.graph{grid-column:2/span 2; display:flex; gap:10px;}
+
+.graph-left{flex:2;}
+.graph-right{
+  flex:1;
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.1);
+  padding:12px;
+  border-radius:12px;
+  overflow-y:auto;
+}
+
+h2{color:#38bdf8;margin-bottom:10px;}
+
+input,select{
+  width:100%;
+  margin:6px 0;
+  padding:6px;
+  border-radius:8px;
+  border:none;
+}
+
+button{
+  width:100%;
+  padding:8px;
+  border:none;
+  border-radius:10px;
+  background:#3b82f6;
+  color:white;
+}
+
+canvas{
+  width:100%;
+  height:100%;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- CONTROLS -->
+<div class="card controls">
+<h2>Controls</h2>
+
+Angle: <span id="angleVal">30</span>°
+<input type="range" id="angle" min="0" max="60" value="30">
+
+Surface:
+<select id="surface">
+<option value="0.05">Ice</option>
+<option value="0.2">Glass</option>
+<option value="0.3">Wood</option>
+<option value="0.5">Concrete</option>
+<option value="0.8">Rubber</option>
+</select>
+
+Mass:
+<input type="number" id="mass" value="5">
+
+Object:
+<select id="objectType">
+<option value="cube">Cube</option>
+<option value="sphere">Sphere</option>
+<option value="cylinder">Cylinder</option>
+</select>
+
+<button onclick="record()">Record</button>
+</div>
+
+<!-- SIMULATION -->
+<div class="card simulation">
+<h2 style="position:absolute; top:10px; left:50%; transform:translateX(-50%);">
+Kewal Friction Analyzer
+</h2>
+<canvas id="canvas"></canvas>
+</div>
+
+<!-- DATA -->
+<div class="card data">
+<h2>Live Data</h2>
+<div id="liveData"></div>
+
+<h2>Observations</h2>
+<table id="table">
+<tr><th>Angle</th><th>Object</th><th>Velocity</th></tr>
+</table>
+</div>
+
+<!-- GRAPH + DESCRIPTION -->
+<div class="card graph">
+
+<div class="graph-left">
+<canvas id="graph"></canvas>
+</div>
+
+<div class="graph-right">
+
+<h2 style="text-align:center;">📘 Project Details</h2>
+
+<div style="font-size:13px; line-height:1.6; color:#e2e8f0;">
+
+<h3 style="color:#38bdf8;">🎯 Aim</h3>
+<p>To study friction on an inclined plane and observe motion changes.</p>
+
+<h3 style="color:#22c55e;">📖 Theory</h3>
+<p>Gravity splits into two components: along plane and perpendicular.</p>
+
+<h3 style="color:#f59e0b;">📐 Formulas</h3>
+<div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:8px;">
+Mg sinθ<br>
+Mg cosθ<br>
+f = μN<br>
+a = g(sinθ − μcosθ)
+</div>
+
+<h3 style="color:#ef4444;">🏁 Conclusion</h3>
+<p>Friction controls motion and depends on surface and angle.</p>
+
+</div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+function resize(){
+canvas.width=canvas.parentElement.clientWidth;
+canvas.height=canvas.parentElement.clientHeight;
+}
+resize();
+window.onresize=resize;
+
+let g=9.8;
+let obj={s:0,velocity:0,rotation:0};
+
+let angleSlider=document.getElementById("angle");
+let angleVal=document.getElementById("angleVal");
+let surfaceSelect=document.getElementById("surface");
+let massInput=document.getElementById("mass");
+let objectType=document.getElementById("objectType");
+let liveData=document.getElementById("liveData");
+
+let chart=new Chart(document.getElementById("graph"),{
+type:'line',
+data:{labels:[],datasets:[{label:'Velocity',data:[],borderWidth:2}]}
+});
+
+angleSlider.oninput=()=>{
+angleVal.innerText=angleSlider.value;
+obj.s=0; obj.velocity=0;
+};
+
+function record(){
+let row=document.getElementById("table").insertRow();
+row.insertCell(0).innerText=angleSlider.value;
+row.insertCell(1).innerText=objectType.value;
+row.insertCell(2).innerText=obj.velocity.toFixed(2);
+
+chart.data.labels.push(chart.data.labels.length);
+chart.data.datasets[0].data.push(obj.velocity);
+chart.update();
+}
+
+// LABEL FUNCTION
+function drawLabel(text,x,y,color){
+ctx.font="bold 14px Arial";
+ctx.strokeStyle="black";
+ctx.lineWidth=3;
+ctx.strokeText(text,x,y);
+ctx.fillStyle=color;
+ctx.fillText(text,x,y);
+}
+
+function drawObject(x,y,angle){
+ctx.save();
+ctx.translate(x,y);
+ctx.rotate(angle);
+
+if(objectType.value==="cube"){
+ctx.fillStyle="orange";
+ctx.fillRect(-20,-20,40,40);
+}
+else if(objectType.value==="sphere"){
+ctx.rotate(obj.rotation);
+ctx.beginPath();
+ctx.arc(0,0,20,0,Math.PI*2);
+ctx.fillStyle="orange";
+ctx.fill();
+}
+else{
+ctx.fillStyle="orange";
+ctx.fillRect(-20,-10,40,20);
+}
+
+ctx.restore();
+}
+
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+let angle=angleSlider.value*Math.PI/180;
+let mu=parseFloat(surfaceSelect.value);
+let mass=parseFloat(massInput.value);
+
+let startX=100,startY=120;
+let length=canvas.width*0.6;
+
+let dx=Math.cos(angle);
+let dy=Math.sin(angle);
+
+let nx=dy;
+let ny=-dx;
+
+let forceDown=mass*g*Math.sin(angle);
+let normal=mass*g*Math.cos(angle);
+let friction=Math.min(mu*normal, forceDown);
+
+let acceleration = g*Math.sin(angle) - mu*g*Math.cos(angle);
+
+obj.velocity += acceleration * 0.05;
+obj.velocity *= 0.995;
+obj.s += obj.velocity;
+
+if(obj.s<0) obj.s=0;
+if(obj.s>length){
+obj.s=length;
+obj.velocity=0;
+}
+
+obj.rotation += obj.velocity * 0.05;
+
+let x=startX + obj.s*dx;
+let y=startY + obj.s*dy;
+
+// plane
+ctx.strokeStyle="#38bdf8";
+ctx.beginPath();
+ctx.moveTo(startX,startY);
+ctx.lineTo(startX+length*dx,startY+length*dy);
+ctx.stroke();
+
+// object
+drawObject(x,y,angle);
+
+// forces
+let cx=x,cy=y;
+
+// Mg
+ctx.strokeStyle="orange";
+ctx.beginPath();
+ctx.moveTo(cx,cy);
+ctx.lineTo(cx,cy+80);
+ctx.stroke();
+drawLabel("Mg",cx+5,cy+90,"orange");
+
+// N
+ctx.strokeStyle="#22c55e";
+ctx.beginPath();
+ctx.moveTo(cx,cy);
+ctx.lineTo(cx + nx*80, cy + ny*80);
+ctx.stroke();
+drawLabel("N",cx + nx*90, cy + ny*90,"#22c55e");
+
+// friction
+ctx.strokeStyle="#3b82f6";
+ctx.beginPath();
+ctx.moveTo(cx,cy);
+ctx.lineTo(cx - dx*80, cy - dy*80);
+ctx.stroke();
+drawLabel("f",cx - dx*90, cy - dy*90,"#3b82f6");
+
+// Mg cosθ
+ctx.strokeStyle="yellow";
+ctx.beginPath();
+ctx.moveTo(cx,cy);
+ctx.lineTo(cx - nx*70, cy - ny*70);
+ctx.stroke();
+drawLabel("Mg cosθ",cx - nx*80, cy - ny*80,"yellow");
+
+// Mg sinθ
+ctx.strokeStyle="cyan";
+ctx.beginPath();
+ctx.moveTo(cx,cy);
+ctx.lineTo(cx + dx*70, cy + dy*70);
+ctx.stroke();
+drawLabel("Mg sinθ",cx + dx*80, cy + dy*80,"cyan");
+
+// theta
+ctx.strokeStyle="#22c55e";
+ctx.beginPath();
+ctx.arc(startX,startY,60,0,angle);
+ctx.stroke();
+drawLabel(`θ=${angleSlider.value}°`,startX+70,startY+30,"#22c55e");
+
+// data
+liveData.innerHTML=`
+Force: ${forceDown.toFixed(2)} N<br>
+Friction: ${friction.toFixed(2)} N<br>
+Velocity: ${obj.velocity.toFixed(2)} m/s<br>
+Object: ${objectType.value}
+`;
+
+requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+
+</body>
+</html>
