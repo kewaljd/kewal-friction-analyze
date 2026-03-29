@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Friction Analysis Ultimate</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -14,11 +16,12 @@ body{
   color:white;
 }
 
+/* MAIN GRID */
 .container{
   display:grid;
   grid-template-columns:260px 1fr 320px;
   grid-template-rows:1fr 260px;
-  height:100vh;
+  min-height:100vh;
   gap:12px;
   padding:12px;
 }
@@ -32,11 +35,25 @@ body{
 }
 
 .controls{grid-row:1/span 2;}
-.simulation{display:flex;justify-content:center;align-items:center;}
+
+.simulation{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100%;
+  min-height:300px;
+}
+
 .data{overflow-y:auto;}
-.graph{grid-column:2/span 2; display:flex; gap:10px;}
+
+.graph{
+  grid-column:2/span 2; 
+  display:flex; 
+  gap:10px;
+}
 
 .graph-left{flex:2;}
+
 .graph-right{
   flex:1;
   background:rgba(255,255,255,0.05);
@@ -70,6 +87,68 @@ canvas{
   width:100%;
   height:100%;
 }
+
+/* ✅ TABLE FIX (same as before) */
+table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  text-align:center;
+  font-size:13px;
+}
+
+table th, table td{
+  padding:6px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+thead{
+  color:#38bdf8;
+}
+
+td{
+  word-break:break-word;
+}
+
+/* ✅ NEW: Observations scroll */
+.obs-container{
+  max-height:200px;
+  overflow-y:auto;
+  margin-top:8px;
+  padding-right:4px;
+}
+
+/* MOBILE */
+@media (max-width: 768px){
+.container{
+  grid-template-columns:1fr;
+  grid-template-rows:auto;
+}
+
+.controls{grid-row:auto;}
+
+.graph{
+  grid-column:auto;
+  flex-direction:column;
+}
+
+.graph-left,
+.graph-right{
+  width:100%;
+}
+
+.simulation{height:300px;}
+
+canvas{height:100% !important;}
+}
+
+.physics-container{
+  max-height:180px;
+  overflow-y:auto;
+  margin-top:8px;
+  padding-right:4px;
+}
+
 </style>
 </head>
 
@@ -104,6 +183,10 @@ Object:
 </select>
 
 <button onclick="record()">Record</button>
+<h2 style="margin-top:20px;">Physics Info</h2>
+<div class="physics-container">
+<div id="physicsBox" style="font-size:13px; line-height:1.6; color:#e2e8f0;"></div>
+</div>
 </div>
 
 <!-- SIMULATION -->
@@ -120,12 +203,24 @@ Kewal Friction Analyzer
 <div id="liveData"></div>
 
 <h2>Observations</h2>
+
+<!-- ✅ ONLY CHANGE HERE -->
+<div class="obs-container">
 <table id="table">
-<tr><th>Angle</th><th>Object</th><th>Velocity</th></tr>
+<thead>
+<tr>
+<th>Angle</th>
+<th>Object</th>
+<th>Velocity</th>
+</tr>
+</thead>
+<tbody></tbody>
 </table>
 </div>
 
-<!-- GRAPH + DESCRIPTION -->
+</div>
+
+<!-- GRAPH + DETAILS -->
 <div class="card graph">
 
 <div class="graph-left">
@@ -136,24 +231,56 @@ Kewal Friction Analyzer
 
 <h2 style="text-align:center;">📘 Project Details</h2>
 
-<div style="font-size:13px; line-height:1.6; color:#e2e8f0;">
+<div style="font-size:13px; line-height:1.7; color:#e2e8f0;">
 
 <h3 style="color:#38bdf8;">🎯 Aim</h3>
-<p>To study friction on an inclined plane and observe motion changes.</p>
+<p>
+To analyze the behavior of objects moving on an inclined plane by studying the effect of friction, 
+angle of inclination, surface characteristics, and object geometry on motion parameters such as 
+velocity and acceleration.
+</p>
 
 <h3 style="color:#22c55e;">📖 Theory</h3>
-<p>Gravity splits into two components: along plane and perpendicular.</p>
+<p>
+When an object is placed on an inclined plane, the gravitational force acting on it can be resolved 
+into two components: one parallel to the plane (Mg sinθ), which tends to move the object downward, 
+and one perpendicular to the plane (Mg cosθ), which gives rise to the normal reaction force (N). 
+The frictional force (f = μN) opposes motion and depends on the nature of the surface.
+</p>
 
-<h3 style="color:#f59e0b;">📐 Formulas</h3>
-<div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:8px;">
-Mg sinθ<br>
-Mg cosθ<br>
-f = μN<br>
-a = g(sinθ − μcosθ)
+<p>
+If the component of gravitational force along the plane exceeds the maximum static friction, the object 
+begins to move, after which kinetic friction governs the motion. The net acceleration of the object is 
+given by:
+</p>
+
+<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+a = g (sinθ − μcosθ)
 </div>
 
-<h3 style="color:#ef4444;">🏁 Conclusion</h3>
-<p>Friction controls motion and depends on surface and angle.</p>
+<h3 style="color:#f59e0b;">📐 Analysis</h3>
+<p>
+The simulation demonstrates that at lower angles, frictional force dominates and prevents motion. 
+As the angle increases, the component of gravity along the plane increases, eventually overcoming 
+friction and initiating motion. Different surfaces exhibit different coefficients of friction, 
+directly affecting the rate of acceleration and velocity of the object.
+</p>
+
+<h3 style="color:#a855f7;">🧪 Observations</h3>
+<p>
+Experimental observations show that smoother surfaces (lower μ) result in higher velocities, 
+while rough surfaces (higher μ) resist motion. The type of object affects rotational behavior 
+(e.g., sphere vs cube), but the fundamental translational motion depends primarily on friction 
+and angle.
+</p>
+
+<h3 style="color:#ef4444;">📊 Conclusion</h3>
+<p>
+The study confirms that friction plays a critical role in controlling motion on inclined planes. 
+The balance between gravitational force and friction determines whether an object remains at rest 
+or accelerates. This principle is widely applicable in engineering systems such as braking mechanisms, 
+conveyor systems, and slope stability analysis.
+</p>
 
 </div>
 </div>
@@ -167,8 +294,9 @@ const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
 
 function resize(){
-canvas.width=canvas.parentElement.clientWidth;
-canvas.height=canvas.parentElement.clientHeight;
+const parent = canvas.parentElement;
+canvas.width = parent.clientWidth;
+canvas.height = parent.clientHeight;
 }
 resize();
 window.onresize=resize;
@@ -194,17 +322,23 @@ obj.s=0; obj.velocity=0;
 };
 
 function record(){
-let row=document.getElementById("table").insertRow();
-row.insertCell(0).innerText=angleSlider.value;
-row.insertCell(1).innerText=objectType.value;
-row.insertCell(2).innerText=obj.velocity.toFixed(2);
+let tbody=document.querySelector("#table tbody");
+
+let row=document.createElement("tr");
+
+row.innerHTML=`
+<td>${angleSlider.value}</td>
+<td>${objectType.value}</td>
+<td>${obj.velocity.toFixed(2)}</td>
+`;
+
+tbody.appendChild(row);
 
 chart.data.labels.push(chart.data.labels.length);
 chart.data.datasets[0].data.push(obj.velocity);
 chart.update();
 }
 
-// LABEL FUNCTION
 function drawLabel(text,x,y,color){
 ctx.font="bold 14px Arial";
 ctx.strokeStyle="black";
@@ -259,6 +393,12 @@ let normal=mass*g*Math.cos(angle);
 let friction=Math.min(mu*normal, forceDown);
 
 let acceleration = g*Math.sin(angle) - mu*g*Math.cos(angle);
+
+// ✅ FIX: prevent backward motion
+if(acceleration < 0){
+  acceleration = 0;
+  obj.velocity = 0;
+}
 
 obj.velocity += acceleration * 0.05;
 obj.velocity *= 0.995;
@@ -341,6 +481,34 @@ Force: ${forceDown.toFixed(2)} N<br>
 Friction: ${friction.toFixed(2)} N<br>
 Velocity: ${obj.velocity.toFixed(2)} m/s<br>
 Object: ${objectType.value}
+`;
+
+document.getElementById("physicsBox").innerHTML = `
+<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px;">
+
+<b style="color:#38bdf8;">📐 Calculations</b><br><br>
+
+<b>1. Parallel Force:</b><br>
+Mg sinθ = ${mass} × ${g} × sin(${angleSlider.value}°)<br>
+= ${(forceDown).toFixed(2)} N<br><br>
+
+<b>2. Normal Force:</b><br>
+N = Mg cosθ = ${mass} × ${g} × cos(${angleSlider.value}°)<br>
+= ${normal.toFixed(2)} N<br><br>
+
+<b>3. Friction:</b><br>
+f = μN = ${mu} × ${normal.toFixed(2)}<br>
+= ${friction.toFixed(2)} N<br><br>
+
+<b>4. Acceleration:</b><br>
+a = g(sinθ − μcosθ)<br>
+= ${acceleration.toFixed(2)} m/s²<br><br>
+
+<b style="color:${acceleration>0 ? "#22c55e" : "#ef4444"};">
+${acceleration > 0 ? "✔ Object is Sliding" : "⛔ Object is at Rest"}
+</b>
+
+</div>
 `;
 
 requestAnimationFrame(draw);
